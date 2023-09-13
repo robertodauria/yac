@@ -7,7 +7,7 @@ const workerMain = function (ev) {
 
 const uploadTest = function (sock, now) {
     const initialMessageSize = 8192; // 8kB
-    const maxMessageSize = 8388608; /* = (1<<23) = 8MB */
+    const maxMessageSize = 1<<23; /* = (1<<23) = 8MB */
     const clientMeasurementInterval = 250; // ms
     const duration = 10000; // 10s
 
@@ -67,28 +67,26 @@ const uploadTest = function (sock, now) {
                     type: 'measurement',
                     src: 'client',
                     data: {
-                        elapsed: (now() - start) / 1000,
+                        elapsed: (t - start) / 1000,
                         bytes: total - sock.bufferedAmount,
                     },
                 });
-                return
+                return;
             }
+        }, 100);
 
+        setInterval(() => {
             const nextSizeIncrement =
                 (data.length >= maxMessageSize) ? Infinity : 16 * data.length;
 
             if (total >= nextSizeIncrement) {
                 data = new Uint8Array(data.length * 2);
-                console.log("resizing buffer to " + data.length);
             }
-
 
             // We keep 7 messages in the send buffer, so there is always some more
             // data to send. The maximum buffer size is 7 * 8MB - 1 byte ~= 56M
             const desiredBuffer = 7 * data.length;
-            const nMessages = ((desiredBuffer - sock.bufferedAmount) / data.length) | 0;
-
-            for (i = 0; i <= nMessages; i++) {
+            while (sock.bufferedAmount + data.length <= desiredBuffer) {
                 sock.send(data);
                 total += data.length;
             }

@@ -4,12 +4,16 @@ const run = function (resultDiv) {
 
     w.postMessage({});
 
+    const results = [];
     w.onmessage = function (e) {
         if (e.data.type == 'measurement') {
             if (e.data.src == 'server') {
                 m = JSON.parse(e.data.data);
-                console.log(m.TCPInfo.BytesReceived / m.TCPInfo.ElapsedTime * 8);
+                results.push(m.TCPInfo.BytesReceived / m.TCPInfo.ElapsedTime * 8);
             }
+        }
+        if (e.data.type == 'close') {
+            console.log(results);
         }
     };
 }
